@@ -1,4 +1,4 @@
-package com.sadmeepo.meowbook.ui.gallery;
+package com.sadmeepo.meowbook.ui.weight_tracker;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
@@ -15,7 +15,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.room.Room;
 
 import com.sadmeepo.meowbook.database.HealthRecord;
 import com.sadmeepo.meowbook.database.HealthRecordDao;
@@ -40,8 +39,8 @@ public class WeightTrackerFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState)  {
-        GalleryViewModel galleryViewModel =
-                new ViewModelProvider(this).get(GalleryViewModel.class);
+        WeightTrackerViewModel weightTrackerViewModel =
+                new ViewModelProvider(this).get(WeightTrackerViewModel.class);
 
         Context ctx = this.getContext();
 
