@@ -14,13 +14,13 @@ public interface HealthRecordDao {
     @Query("SELECT * FROM health_records")
     List<HealthRecord> getAll();
 
-    @Query("SELECT * FROM health_records WHERE uid IN (:userIds)")
-    List<HealthRecord> loadAllByIds(int[] userIds);
+    @Query("SELECT * FROM health_records WHERE pet_name LIKE :name")
+    List<HealthRecord> loadAllByName(String name);
 
     @Query("SELECT * FROM health_records WHERE pet_name LIKE :name LIMIT 1")
     HealthRecord findByName(String name);
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     void insert(HealthRecord healthRecord);
 
     @Update

@@ -2,6 +2,8 @@ package com.sadmeepo.meowbook.ui.weight_tracker;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.database.sqlite.SQLiteConstraintException;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +15,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -102,22 +105,51 @@ public class WeightTrackerFragment extends Fragment {
                     String weightValueString = editTextWeightValue.getText().toString();
                     weightValue = Double.parseDouble(weightValueString);
                 } catch (NumberFormatException e) {
-                    // TODO
+                    recordWeightMessage.setText("Please enter a number");
+                    return;
                 }
                 if (!weightUnitSwitch.isChecked()) {
+                    // Convert to kg.
                     weightValue *= 0.453592;
                 }
 
+                // Validate weight value.
+                if (weightValue < 0.1) {
+                    recordWeightMessage.setText("Meepo is too slim to be true. Newborn average weight is 150-250 grams");
+                    return;
+                } else if (weightValue > 12) {
+                    recordWeightMessage.setText("Meepo is too chonky to be true");
+                    return;
+                }
+
                 HealthRecord record = new HealthRecord(
-                        0,
                         "Meepo",
                         weightRecordDate.getText().toString(),
                         weightValue);
 
                 try {
                     healthRecordDao.insert(record);
-                } catch (Exception e) {
-                    recordWeightMessage.setText(e.getMessage());
+                }
+                catch (SQLiteConstraintException e) {
+                    DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            switch (which){
+                                case DialogInterface.BUTTON_POSITIVE:
+                                    healthRecordDao.update(record);
+                                    // TODO: Error handling.
+                                    break;
+
+                                case DialogInterface.BUTTON_NEGATIVE:
+                                    break;
+                            }
+                        }
+                    };
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+                    builder.setMessage("Meepo's weight on " + weightRecordDate.getText().toString() + " has been recorded. Overwrite?")
+                            .setPositiveButton("Yes", dialogClickListener)
+                            .setNegativeButton("No", dialogClickListener).show();
                 }
 
                 // FIXME: For debugging.
@@ -130,7 +162,7 @@ public class WeightTrackerFragment extends Fragment {
                     TextView weightHistory = root.findViewById(R.id.weightHistory);
                     weightHistory.setText(summary);
                 } catch (Exception e) {
-                    recordWeightMessage.setText(e.getMessage());
+                    recordWeightMessage.setText(e.getClass().toString());
                 }
             }
         });
