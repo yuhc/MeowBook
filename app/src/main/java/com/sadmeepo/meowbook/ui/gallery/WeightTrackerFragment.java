@@ -15,22 +15,28 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.room.Room;
 
-import com.sadmeepo.meowbook.DBHandler;
+import com.sadmeepo.meowbook.database.HealthRecord;
+import com.sadmeepo.meowbook.database.HealthRecordDao;
+import com.sadmeepo.meowbook.database.HealthRecordDatabase;
 import com.sadmeepo.meowbook.databinding.FragmentWeightTrackerBinding;
 import com.sadmeepo.meowbook.R;
 
 import java.util.Calendar;
+import java.util.List;
 
 public class WeightTrackerFragment extends Fragment {
 
     private FragmentWeightTrackerBinding binding;
-    private DBHandler dbHandler;
     DatePickerDialog datePicker;
 
     Button weightRecordDate;
     Switch weightUnitSwitch;
     TextView textInputWeightUnit;
+    TextView editTextWeightValue;
+    Button buttonAddWeight;
+    TextView recordWeightMessage;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState)  {
@@ -38,7 +44,6 @@ public class WeightTrackerFragment extends Fragment {
                 new ViewModelProvider(this).get(GalleryViewModel.class);
 
         Context ctx = this.getContext();
-        dbHandler = new DBHandler(ctx);
 
         binding = FragmentWeightTrackerBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -81,6 +86,56 @@ public class WeightTrackerFragment extends Fragment {
                 .append(cldr.get(Calendar.DAY_OF_MONTH)).append("/")
                 .append(cldr.get(Calendar.YEAR)));
 
+        // Set weight record button event listener.
+        editTextWeightValue = root.findViewById(R.id.editTextWeightValue);
+        buttonAddWeight = root.findViewById(R.id.buttonAddWeight);
+        recordWeightMessage = root.findViewById(R.id.recordWeightMessage);
+        buttonAddWeight.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                HealthRecordDao healthRecordDao =
+                        HealthRecordDatabase.getInstance(ctx).healthRecordDao();
+
+                // TODO: Validate date string.
+
+                double weightValue = 0;
+                try {
+                    String weightValueString = editTextWeightValue.getText().toString();
+                    weightValue = Double.parseDouble(weightValueString);
+                } catch (NumberFormatException e) {
+                    // TODO
+                }
+                if (!weightUnitSwitch.isChecked()) {
+                    weightValue *= 0.453592;
+                }
+
+                HealthRecord record = new HealthRecord(
+                        0,
+                        "Meepo",
+                        weightRecordDate.getText().toString(),
+                        weightValue);
+
+                try {
+                    healthRecordDao.insert(record);
+                } catch (Exception e) {
+                    recordWeightMessage.setText(e.getMessage());
+                }
+
+                // FIXME: For debugging.
+                try {
+                    List<HealthRecord> records = healthRecordDao.getAll();
+                    String summary = new String();
+                    for (HealthRecord rd : records) {
+                        summary += rd.toString() + "\n";
+                    }
+                    TextView weightHistory = root.findViewById(R.id.weightHistory);
+                    weightHistory.setText(summary);
+                } catch (Exception e) {
+                    recordWeightMessage.setText(e.getMessage());
+                }
+            }
+        });
+
         return root;
     }
 
@@ -91,6 +146,11 @@ public class WeightTrackerFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        // FIXME: For debugging.
+        HealthRecordDao healthRecordDao =
+                HealthRecordDatabase.getInstance(getContext()).healthRecordDao();
+        healthRecordDao.nukeTable();
+
         super.onDestroyView();
         binding = null;
     }

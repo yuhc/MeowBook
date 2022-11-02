@@ -12,6 +12,7 @@
         android:layout_height="wrap_content" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout"
         android:layout_width="match_parent"
         android:layout_height="137dp"
         android:orientation="horizontal"
@@ -31,7 +32,7 @@
             app:layout_constraintVertical_bias="0.487">
 
             <EditText
-                android:id="@+id/editTextNumberDecimal"
+                android:id="@+id/editTextWeightValue"
                 android:layout_width="137dp"
                 android:layout_height="45dp"
                 android:ems="10"
@@ -46,14 +47,14 @@
                 android:layout_alignParentTop="true"
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="11dp"
-                android:layout_toEndOf="@+id/editTextNumberDecimal"
+                android:layout_toEndOf="@+id/editTextWeightValue"
                 android:text="lbs" />
 
             <Button
                 android:id="@+id/weightRecordDate"
                 android:layout_width="159dp"
                 android:layout_height="41dp"
-                android:layout_below="@+id/editTextNumberDecimal"
+                android:layout_below="@+id/editTextWeightValue"
                 android:layout_marginTop="11dp"
                 android:contextClickable="true"
                 android:ems="10"
@@ -72,6 +73,16 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/relativeLayout2"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/recordWeightMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="TextView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/relativeLayout2"
+            app:layout_constraintTop_toBottomOf="@+id/buttonAddWeight" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -98,5 +109,19 @@
             android:text="lbs"
             android:textOn="ON" />
     </RelativeLayout>
+
+    <TextView
+        android:id="@+id/weightHistory"
+        android:layout_width="350dp"
+        android:layout_height="203dp"
+        android:background="#9AD2DA"
+        android:scrollbarStyle="insideInset"
+        android:scrollbars="vertical"
+        android:text="NA"
+        android:verticalScrollbarPosition="defaultPosition"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
