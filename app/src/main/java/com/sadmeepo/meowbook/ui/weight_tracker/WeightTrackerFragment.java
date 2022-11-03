@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.database.sqlite.SQLiteConstraintException;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,14 +20,26 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.sadmeepo.meowbook.database.HealthRecord;
 import com.sadmeepo.meowbook.database.HealthRecordDao;
 import com.sadmeepo.meowbook.database.HealthRecordDatabase;
 import com.sadmeepo.meowbook.databinding.FragmentWeightTrackerBinding;
 import com.sadmeepo.meowbook.R;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class WeightTrackerFragment extends Fragment {
 
@@ -39,6 +52,8 @@ public class WeightTrackerFragment extends Fragment {
     TextView editTextWeightValue;
     Button buttonAddWeight;
     TextView recordWeightMessage;
+
+    LineChart weightHistoryLineChart;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState)  {
@@ -88,6 +103,30 @@ public class WeightTrackerFragment extends Fragment {
                 .append(cldr.get(Calendar.DAY_OF_MONTH)).append("/")
                 .append(cldr.get(Calendar.YEAR)));
 
+        // Set up line chart for weight history.
+        weightHistoryLineChart = root.findViewById(R.id.weightHistoryLineChart);
+        configureWeightHistoryLineChart();
+
+        // Load existing weight data.
+        HealthRecordDao healthRecordDao =
+                HealthRecordDatabase.getInstance(ctx).healthRecordDao();
+        ArrayList<Entry> testEntry = new ArrayList<>();
+        try {
+            List<HealthRecord> records = healthRecordDao.getAll();
+            String summary = new String();
+            float i = 1;
+            for (HealthRecord rd : records) {
+                testEntry.add(new Entry(i, ((float) rd.weightInKg)));
+                i += 1;
+                summary += rd.toString() + "\n";
+            }
+            TextView weightHistory = root.findViewById(R.id.weightHistory);
+            weightHistory.setText(summary);
+        } catch (Exception e) {
+            recordWeightMessage.setText(e.getClass().toString());
+        }
+        setWeightHistoryLineChartData(testEntry);
+
         // Set weight record button event listener.
         editTextWeightValue = root.findViewById(R.id.editTextWeightValue);
         buttonAddWeight = root.findViewById(R.id.buttonAddWeight);
@@ -95,9 +134,6 @@ public class WeightTrackerFragment extends Fragment {
         buttonAddWeight.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                HealthRecordDao healthRecordDao =
-                        HealthRecordDatabase.getInstance(ctx).healthRecordDao();
-
                 // TODO: Validate date string.
 
                 double weightValue = 0;
@@ -153,10 +189,14 @@ public class WeightTrackerFragment extends Fragment {
                 }
 
                 // FIXME: For debugging.
+                ArrayList<Entry> testEntry = new ArrayList<>();
                 try {
                     List<HealthRecord> records = healthRecordDao.getAll();
                     String summary = new String();
+                    float i = 1;
                     for (HealthRecord rd : records) {
+                        testEntry.add(new Entry(i, ((float) rd.weightInKg)));
+                        i += 1;
                         summary += rd.toString() + "\n";
                     }
                     TextView weightHistory = root.findViewById(R.id.weightHistory);
@@ -164,6 +204,7 @@ public class WeightTrackerFragment extends Fragment {
                 } catch (Exception e) {
                     recordWeightMessage.setText(e.getClass().toString());
                 }
+                setWeightHistoryLineChartData(testEntry);
             }
         });
 
@@ -184,5 +225,40 @@ public class WeightTrackerFragment extends Fragment {
 
         super.onDestroyView();
         binding = null;
+    }
+
+    private void configureWeightHistoryLineChart() {
+        Description desc = new Description();
+        desc.setText("Weight History");
+        desc.setTextSize(24);
+        weightHistoryLineChart.setDescription(desc);
+
+        XAxis xAxis = weightHistoryLineChart.getXAxis();
+        xAxis.setValueFormatter(new ValueFormatter() {
+            private final SimpleDateFormat mFormat = new SimpleDateFormat("dd MMM", Locale.ENGLISH);
+
+            @Override
+            public String getFormattedValue(float value) {
+                long millis = (long) value * 1000L;
+                return mFormat.format(new Date(millis));
+            }
+        });
+    }
+
+    private void setWeightHistoryLineChartData(ArrayList<Entry> weightInKg) {
+        ArrayList<ILineDataSet> dataSets = new ArrayList<>();
+
+        LineDataSet weightDataSet = new LineDataSet(weightInKg, "Weight (kg)");
+        weightDataSet.setDrawCircles(true);
+        weightDataSet.setCircleRadius(4);
+        weightDataSet.setDrawValues(false);
+        weightDataSet.setLineWidth(3);
+        weightDataSet.setColor(Color.GREEN);
+        weightDataSet.setCircleColor(Color.GREEN);
+        dataSets.add(weightDataSet);
+
+        LineData lineData = new LineData(dataSets);
+        weightHistoryLineChart.setData(lineData);
+        weightHistoryLineChart.invalidate();
     }
 }
