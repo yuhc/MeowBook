@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.database.sqlite.SQLiteConstraintException;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,6 +46,7 @@ public class WeightTrackerFragment extends Fragment {
 
     private FragmentWeightTrackerBinding binding;
     DatePickerDialog datePicker;
+    HealthRecordDao healthRecordDao;
 
     Button weightRecordDate;
     Switch weightUnitSwitch;
@@ -96,6 +98,10 @@ public class WeightTrackerFragment extends Fragment {
             }
         });
 
+        recordWeightMessage = root.findViewById(R.id.recordWeightMessage);
+        healthRecordDao =
+                HealthRecordDatabase.getInstance(ctx).healthRecordDao();
+
         // Set today's date as the default value in weightRecordDate.
         final Calendar cldr = Calendar.getInstance();
         weightRecordDate.setText(new StringBuilder()
@@ -106,31 +112,16 @@ public class WeightTrackerFragment extends Fragment {
         // Set up line chart for weight history.
         weightHistoryLineChart = root.findViewById(R.id.weightHistoryLineChart);
         configureWeightHistoryLineChart();
-
-        // Load existing weight data.
-        HealthRecordDao healthRecordDao =
-                HealthRecordDatabase.getInstance(ctx).healthRecordDao();
-        ArrayList<Entry> testEntry = new ArrayList<>();
-        try {
-            List<HealthRecord> records = healthRecordDao.getAll();
-            String summary = new String();
-            float i = 1;
-            for (HealthRecord rd : records) {
-                testEntry.add(new Entry(i, ((float) rd.weightInKg)));
-                i += 1;
-                summary += rd.toString() + "\n";
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                loadWeightHistoryInLineChart(root);
             }
-            TextView weightHistory = root.findViewById(R.id.weightHistory);
-            weightHistory.setText(summary);
-        } catch (Exception e) {
-            recordWeightMessage.setText(e.getClass().toString());
-        }
-        setWeightHistoryLineChartData(testEntry);
+        });
 
         // Set weight record button event listener.
         editTextWeightValue = root.findViewById(R.id.editTextWeightValue);
         buttonAddWeight = root.findViewById(R.id.buttonAddWeight);
-        recordWeightMessage = root.findViewById(R.id.recordWeightMessage);
         buttonAddWeight.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -243,6 +234,26 @@ public class WeightTrackerFragment extends Fragment {
                 return mFormat.format(new Date(millis));
             }
         });
+    }
+
+    private void loadWeightHistoryInLineChart(View root) {
+        // Load existing weight data.
+        ArrayList<Entry> testEntry = new ArrayList<>();
+        try {
+            List<HealthRecord> records = healthRecordDao.getAll();
+            String summary = new String();
+            float i = 1;
+            for (HealthRecord rd : records) {
+                testEntry.add(new Entry(i, ((float) rd.weightInKg)));
+                i += 1;
+                summary += rd.toString() + "\n";
+            }
+            TextView weightHistory = root.findViewById(R.id.weightHistory);
+            weightHistory.setText(summary);
+        } catch (Exception e) {
+            recordWeightMessage.setText(e.getClass().toString());
+        }
+        setWeightHistoryLineChartData(testEntry);
     }
 
     private void setWeightHistoryLineChartData(ArrayList<Entry> weightInKg) {

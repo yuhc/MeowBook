@@ -17,7 +17,7 @@ public abstract class HealthRecordDatabase extends RoomDatabase {
             instance = Room.databaseBuilder(
                     context.getApplicationContext(),
                     HealthRecordDatabase.class,
-                    DB_NAME).fallbackToDestructiveMigration().allowMainThreadQueries().build();
+                    DB_NAME).fallbackToDestructiveMigration().build();
         }
         return instance;
     }
