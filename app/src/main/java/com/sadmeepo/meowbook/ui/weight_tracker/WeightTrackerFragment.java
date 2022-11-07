@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.database.sqlite.SQLiteConstraintException;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -29,6 +30,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.EntryXComparator;
 import com.sadmeepo.meowbook.database.HealthRecord;
 import com.sadmeepo.meowbook.database.HealthRecordDao;
 import com.sadmeepo.meowbook.database.HealthRecordDatabase;
@@ -36,8 +38,11 @@ import com.sadmeepo.meowbook.databinding.FragmentWeightTrackerBinding;
 import com.sadmeepo.meowbook.R;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -179,23 +184,13 @@ public class WeightTrackerFragment extends Fragment {
                             .setNegativeButton("No", dialogClickListener).show();
                 }
 
-                // FIXME: For debugging.
-                ArrayList<Entry> testEntry = new ArrayList<>();
-                try {
-                    List<HealthRecord> records = healthRecordDao.getAll();
-                    String summary = new String();
-                    float i = 1;
-                    for (HealthRecord rd : records) {
-                        testEntry.add(new Entry(i, ((float) rd.weightInKg)));
-                        i += 1;
-                        summary += rd.toString() + "\n";
+                // TODO: Do not reload all data points.
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        loadWeightHistoryInLineChart(root);
                     }
-                    TextView weightHistory = root.findViewById(R.id.weightHistory);
-                    weightHistory.setText(summary);
-                } catch (Exception e) {
-                    recordWeightMessage.setText(e.getClass().toString());
-                }
-                setWeightHistoryLineChartData(testEntry);
+                });
             }
         });
 
@@ -238,27 +233,25 @@ public class WeightTrackerFragment extends Fragment {
 
     private void loadWeightHistoryInLineChart(View root) {
         // Load existing weight data.
-        ArrayList<Entry> testEntry = new ArrayList<>();
+        ArrayList<Entry> entries = new ArrayList<>();
+        SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy", Locale.ENGLISH);
         try {
             List<HealthRecord> records = healthRecordDao.getAll();
-            String summary = new String();
-            float i = 1;
             for (HealthRecord rd : records) {
-                testEntry.add(new Entry(i, ((float) rd.weightInKg)));
-                i += 1;
-                summary += rd.toString() + "\n";
+                Date date = formatter.parse(rd.date);
+                entries.add(new Entry((float)(date.getTime() / 1000.0), ((float) rd.weightInKg)));
             }
-            TextView weightHistory = root.findViewById(R.id.weightHistory);
-            weightHistory.setText(summary);
         } catch (Exception e) {
             recordWeightMessage.setText(e.getClass().toString());
         }
-        setWeightHistoryLineChartData(testEntry);
+        setWeightHistoryLineChartData(entries);
     }
 
     private void setWeightHistoryLineChartData(ArrayList<Entry> weightInKg) {
+        Collections.sort(weightInKg, new EntryXComparator());
         ArrayList<ILineDataSet> dataSets = new ArrayList<>();
 
+        // TODO: Check unit.
         LineDataSet weightDataSet = new LineDataSet(weightInKg, "Weight (kg)");
         weightDataSet.setDrawCircles(true);
         weightDataSet.setCircleRadius(4);
